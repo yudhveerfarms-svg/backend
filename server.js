@@ -10,9 +10,23 @@ const app = express();
 connectDB();
 const PORT = process.env.PORT || 5000;
 
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  'http://localhost:5173',
+  'https://yudhveerfarms.com',
+  'http://yudhveerfarms.com'
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173', // Adjust to match your frontend URL
-  methods: ['GET', 'POST'],
+  origin: function (origin, callback) {
+    // allow requests with no origin (mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS policy: Origin not allowed'), false);
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true
 }));
 app.use(express.json());
@@ -26,7 +40,9 @@ app.get('/api/products', async (req, res) => {
     res.status(500).json({ message: 'Server Error fetching products' });
   }
 });
-
+app.get('/api/test', async (req, res) => {
+  res.json({ message: 'Test endpoint is working!' });
+});
 app.post('/api/contact', (req, res) => {
   const { name, email, message } = req.body;
   // Process the data (save to DB, send email, etc.)
@@ -93,5 +109,5 @@ app.post('/api/contact', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is attempting to start on port ${PORT}...`);
+  console.log(`Server running on port ${PORT}`);
 });
