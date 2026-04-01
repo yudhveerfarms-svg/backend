@@ -35,7 +35,51 @@ app.use(express.json());
 app.get('/api/products', async (req, res) => {
   try {
     const productsList = await Product.find({});
-    res.json({ dairy: productsList }); // Kept the { dairy: [] } wrapper to match frontend expected structure initially, or just send array if frontend allows.
+
+    // If no products in DB, return default products
+    if (!productsList || productsList.length === 0) {
+      const defaultProducts = [
+        {
+          id: '1',
+          name: 'A2 Desi Ghee',
+          description: 'Pure, traditional bilona A2 Desi Ghee made from the milk of grass-fed cows. Rich in nutrients and authentic aroma.',
+          price: 'Starting from ₹499',
+          image: '/images/ghefront.png',
+          type: 'Dairy',
+          weight: 'Various Sizes'
+        },
+        {
+          id: '2',
+          name: 'Stone-Ground Aata',
+          description: 'Premium whole wheat aata, stone-ground to preserve natural fibers and nutrients. Perfect for soft, healthy rotis.',
+          price: 'Starting from ₹400',
+          image: '/images/aatamain.png',
+          type: 'Pantry',
+          weight: 'Various Sizes'
+        },
+        {
+          id: '3',
+          name: 'Natural Premium Honey',
+          description: '100% pure, unprocessed natural honey sourced from our own farm apiaries. High in antioxidants.',
+          price: 'Starting from ₹250',
+          image: '/images/honeyfront.png',
+          type: 'Pantry',
+          weight: 'Various Sizes'
+        },
+        {
+          id: '4',
+          name: 'Cold-Pressed Mustard Oil',
+          description: 'Traditional wood-pressed kachi ghani mustard oil. Retains natural pungency and health benefits.',
+          price: 'Starting from ₹180',
+          image: '/images/mustardoil.png',
+          type: 'Pantry',
+          weight: 'Various Sizes'
+        }
+      ];
+      return res.json({ dairy: defaultProducts });
+    }
+
+    res.json({ dairy: productsList });
   } catch (error) {
     res.status(500).json({ message: 'Server Error fetching products' });
   }
