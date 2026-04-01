@@ -14,17 +14,26 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
   'http://localhost:5173',
   'https://yudhveerfarms.com',
-  'http://yudhveerfarms.com'
+  'http://yudhveerfarms.com',
+  'https://www.yudhveerfarms.com',
+  'http://www.yudhveerfarms.com'
 ].filter(Boolean);
 
 app.use(cors({
   origin: function (origin, callback) {
     // allow requests with no origin (mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
+    
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    return callback(new Error('CORS policy: Origin not allowed'), false);
+
+    // Allow local network IP addresses for testing from phone (e.g., 192.168.*.*)
+    if (/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('CORS policy: Origin not allowed - ' + origin), false);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true
@@ -44,7 +53,7 @@ app.get('/api/products', async (req, res) => {
           name: 'A2 Desi Ghee',
           description: 'Pure, traditional bilona A2 Desi Ghee made from the milk of grass-fed cows. Rich in nutrients and authentic aroma.',
           price: 'Starting from ₹499',
-          image: '/images/ghefront.png',
+          image: '/images/ghenew.png',
           type: 'Dairy',
           weight: 'Various Sizes'
         },
@@ -53,7 +62,7 @@ app.get('/api/products', async (req, res) => {
           name: 'Stone-Ground Aata',
           description: 'Premium whole wheat aata, stone-ground to preserve natural fibers and nutrients. Perfect for soft, healthy rotis.',
           price: 'Starting from ₹400',
-          image: '/images/aatamain.png',
+          image: '/images/gheenew.png',
           type: 'Pantry',
           weight: 'Various Sizes'
         },
@@ -62,7 +71,7 @@ app.get('/api/products', async (req, res) => {
           name: 'Natural Premium Honey',
           description: '100% pure, unprocessed natural honey sourced from our own farm apiaries. High in antioxidants.',
           price: 'Starting from ₹250',
-          image: '/images/honeyfront.png',
+          image: '/images/gheenew.png',
           type: 'Pantry',
           weight: 'Various Sizes'
         },
@@ -71,7 +80,7 @@ app.get('/api/products', async (req, res) => {
           name: 'Cold-Pressed Mustard Oil',
           description: 'Traditional wood-pressed kachi ghani mustard oil. Retains natural pungency and health benefits.',
           price: 'Starting from ₹180',
-          image: '/images/mustardoil.png',
+          image: '/images/gheenew.png',
           type: 'Pantry',
           weight: 'Various Sizes'
         }
