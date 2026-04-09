@@ -23,7 +23,7 @@ app.use(cors({
   origin: function (origin, callback) {
     // allow requests with no origin (mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
@@ -80,6 +80,15 @@ app.get('/api/products', async (req, res) => {
           name: 'Cold-Pressed Mustard Oil',
           description: 'Traditional wood-pressed kachi ghani mustard oil. Retains natural pungency and health benefits.',
           price: 'Starting from ₹180',
+          image: '/images/gheenew.png',
+          type: 'Pantry',
+          weight: 'Various Sizes'
+        },
+        {
+          id: '5',
+          name: 'Organic Desi Gur (Jaggery)',
+          description: 'Naturally processed organic jaggery made from pure sugarcane juice. Rich in minerals, chemical-free, and full of traditional sweetness.',
+          price: 'Starting from ₹500',
           image: '/images/gheenew.png',
           type: 'Pantry',
           weight: 'Various Sizes'
