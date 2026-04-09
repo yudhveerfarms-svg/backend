@@ -1,0 +1,158 @@
+const mongoose = require('mongoose');
+
+const orderItemSchema = mongoose.Schema(
+  {
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    price: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    lineTotal: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+  },
+  { _id: false }
+);
+
+const paymentAttemptSchema = mongoose.Schema(
+  {
+    razorpayOrderId: {
+      type: String,
+      required: true,
+    },
+    razorpayPaymentId: {
+      type: String,
+    },
+    amount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    status: {
+      type: String,
+      enum: ['created', 'authorized', 'captured', 'failed', 'refunded'],
+      default: 'created',
+    },
+    signatureVerified: {
+      type: Boolean,
+      default: false,
+    },
+    failureReason: {
+      type: String,
+      default: null,
+    },
+    rawPayload: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+  },
+  { timestamps: true }
+);
+
+const orderSchema = mongoose.Schema(
+  {
+    orderNumber: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+      index: true,
+    },
+    orderType: {
+      type: String,
+      enum: ['guest', 'authenticated'],
+      default: 'guest',
+      index: true,
+    },
+    customer: {
+      name: String,
+      email: String,
+      phone: String,
+      address: String,
+    },
+    items: {
+      type: [orderItemSchema],
+      required: true,
+      validate: {
+        validator: function validator(items) {
+          return Array.isArray(items) && items.length > 0;
+        },
+        message: 'At least one order item is required',
+      },
+    },
+    subtotal: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true,
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    totalPrice: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    currency: {
+      type: String,
+      default: 'INR',
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['created', 'pending', 'paid', 'failed', 'cancelled', 'refunded'],
+      default: 'created',
+      index: true,
+    },
+    paymentAttempts: {
+      type: [paymentAttemptSchema],
+      default: [],
+    },
+    paidAt: {
+      type: Date,
+      default: null,
+    },
+    paymentId: {
+      type: String,
+      default: null,
+    },
+    orderStatus: {
+      type: String,
+      enum: ['created', 'pending', 'paid', 'failed', 'cancelled', 'refunded'],
+      default: 'created',
+      index: true,
+    },
+  },
+  { timestamps: true }
+);
+
+const Order = mongoose.model('Order', orderSchema);
+
+module.exports = Order;

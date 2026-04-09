@@ -4,6 +4,9 @@ const cors = require('cors');
 const nodemailer = require('nodemailer');
 const connectDB = require('./config/db');
 const Product = require('./models/Product');
+const checkoutRoutes = require('./routes/checkoutRoutes');
+const authRoutes = require('./routes/authRoutes');
+const cartRoutes = require('./routes/cartRoutes');
 
 const app = express();
 // Connect to database
@@ -39,6 +42,9 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use('/api/checkout', checkoutRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/cart', cartRoutes);
 
 // Routes
 app.get('/api/products', async (req, res) => {
@@ -167,6 +173,17 @@ app.post('/api/contact', (req, res) => {
     } else {
       res.status(200).json({ message: 'Message received and email sent successfully' });
     }
+  });
+});
+
+app.use((req, res) => {
+  return res.status(404).json({ message: 'Route not found' });
+});
+
+app.use((err, req, res, next) => {
+  console.error(err);
+  return res.status(500).json({
+    message: err.message || 'Internal server error',
   });
 });
 
