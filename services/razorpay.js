@@ -1,13 +1,25 @@
 const Razorpay = require('razorpay');
+const { AppError } = require('../utils/AppError');
 
-if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-  // Keep startup flexible for local non-payment routes.
-  console.warn('Razorpay keys are missing. Payment APIs will fail until configured.');
+let client = null;
+
+/**
+ * Lazily instantiate Razorpay so the API process can boot without payment keys
+ * (e.g. local dev, health checks). Callers must handle missing configuration.
+ */
+function getRazorpay() {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret) {
+    throw new AppError('Razorpay is not configured', 503, { code: 'RAZORPAY_CONFIG' });
+  }
+  if (!client) {
+    client = new Razorpay({
+      key_id: keyId,
+      key_secret: keySecret,
+    });
+  }
+  return client;
 }
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || '',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || '',
-});
-
-module.exports = razorpay;
+module.exports = { getRazorpay };

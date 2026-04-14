@@ -1,42 +1,74 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { getJwtSecret } = require('../services/token.service');
+const { AppError } = require('../utils/AppError');
+const { asyncHandler } = require('../utils/asyncHandler');
 
-async function authRequired(req, res, next) {
-  try {
-    const authHeader = req.headers.authorization || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+const authRequired = asyncHandler(async (req, res, next) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
-    if (!token) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret-change-me');
-    const user = await User.findById(decoded.userId).select('-password');
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid token user' });
-    }
-
-    req.user = user;
-    return next();
-  } catch (error) {
-    return res.status(401).json({ message: 'Invalid or expired token' });
+  if (!token) {
+    throw new AppError('Authentication required', 401);
   }
-}
 
-async function optionalAuth(req, _res, next) {
+  let decoded;
   try {
-    const authHeader = req.headers.authorization || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    decoded = jwt.verify(token, getJwtSecret());
+  } catch {
+    throw new AppError('Invalid or expired token', 401);
+  }
 
-    if (!token) return next();
+  const user = await User.findById(decoded.userId).select('-password');
+  if (!user) {
+    throw new AppError('Invalid token user', 401);
+  }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret-change-me');
+  req.user = user;
+  return next();
+});
+
+const optionalAuth = asyncHandler(async (req, res, next) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+  if (!token) return next();
+
+  try {
+    const decoded = jwt.verify(token, getJwtSecret());
     const user = await User.findById(decoded.userId).select('-password');
     if (user) req.user = user;
-    return next();
   } catch {
-    return next();
+    // ignore invalid token for optional auth
   }
-}
+  return next();
+});
 
-module.exports = { authRequired, optionalAuth };
+const adminRequired = asyncHandler(async (req, res, next) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+  if (!token) {
+    throw new AppError('Authentication required', 401);
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, getJwtSecret());
+  } catch {
+    throw new AppError('Invalid or expired token', 401);
+  }
+
+  const user = await User.findById(decoded.userId).select('-password');
+  if (!user) {
+    throw new AppError('Invalid token user', 401);
+  }
+  if (user.role !== 'admin') {
+    throw new AppError('Admin access required', 403);
+  }
+
+  req.user = user;
+  return next();
+});
+
+module.exports = { authRequired, optionalAuth, adminRequired };

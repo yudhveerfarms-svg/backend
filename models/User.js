@@ -48,6 +48,12 @@ const userSchema = mongoose.Schema(
       type: String,
       default: '',
     },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+      index: true,
+    },
     cartItems: {
       type: [cartItemSchema],
       default: [],

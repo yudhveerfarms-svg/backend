@@ -90,6 +90,9 @@ const orderSchema = mongoose.Schema(
       email: String,
       phone: String,
       address: String,
+      city: { type: String, default: '' },
+      state: { type: String, default: '' },
+      pincode: { type: String, default: '' },
     },
     items: {
       type: [orderItemSchema],
@@ -105,6 +108,42 @@ const orderSchema = mongoose.Schema(
       type: Number,
       required: true,
       min: 0,
+    },
+    taxAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    shippingAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    paymentMethod: {
+      type: String,
+      default: 'Razorpay',
+    },
+    invoiceNumber: {
+      type: String,
+      default: null,
+      index: true,
+      sparse: true,
+    },
+    fulfillmentStatus: {
+      type: String,
+      enum: ['pending_payment', 'processing', 'shipped', 'delivered', 'cancelled'],
+      default: 'pending_payment',
+      index: true,
+    },
+    statusHistory: {
+      type: [
+        {
+          label: String,
+          detail: String,
+          at: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
     },
     productId: {
       type: mongoose.Schema.Types.ObjectId,
