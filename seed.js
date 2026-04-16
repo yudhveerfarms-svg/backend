@@ -37,6 +37,15 @@ const products = [
         description: "Pure cold-pressed mustard oil, extracted without heat to retain health benefits.",
         image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
     }
+    ,
+     {
+        name: "Desi Gur ( Natural Jaggery )",
+        type: "Sweetener",
+        weight: "500g",
+        price: 199,
+        description: "Unrefined organic jaggery made from sugarcane juice, rich in minerals and antioxidants.",
+        image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+    }
 ];
 
 const importData = async () => {
