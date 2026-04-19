@@ -35,9 +35,11 @@ const userSchema = mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    // Missing password allowed for Firebase (Google) users
     password: {
       type: String,
-      required: true,
+      required: false,
+      default: null,
       minlength: 6,
     },
     phone: {
@@ -47,6 +49,16 @@ const userSchema = mongoose.Schema(
     address: {
       type: String,
       default: '',
+    },
+    googleId: {
+      type: String,
+      default: null,
+      sparse: true,
+    },
+    authProvider: {
+      type: String,
+      enum: ['email', 'google'],
+      default: 'email',
     },
     cartItems: {
       type: [cartItemSchema],

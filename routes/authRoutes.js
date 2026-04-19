@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { authRequired } = require('../middleware/auth');
+const admin = require('../config/firebase');
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ function sanitizeUser(user) {
     email: user.email,
     phone: user.phone,
     address: user.address,
+    authProvider: user.authProvider,
   };
 }
 
@@ -41,6 +43,7 @@ router.post('/signup', async (req, res) => {
       password: hashedPassword,
       phone,
       address,
+      authProvider: 'email',
     });
 
     return res.status(201).json({
@@ -67,6 +70,12 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    if (!user.password) {
+      return res.status(401).json({
+        message: 'This account uses Google login. Please use "Continue with Google".',
+      });
+    }
+
     const passwordMatches = await bcrypt.compare(password, user.password);
     if (!passwordMatches) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -81,6 +90,55 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ message: 'Unable to login', error: error.message });
+  }
+});
+
+router.post('/firebase-login', async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ message: 'Firebase ID token is required' });
+    }
+
+    if (!admin) {
+      return res.status(500).json({ message: 'Firebase Admin SDK is not properly configured on server.' });
+    }
+
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (firebaseErr) {
+      return res.status(401).json({ message: 'Invalid or expired Firebase token' });
+    }
+
+    const { uid, email, name, picture } = decodedToken;
+    const userEmail = String(email).toLowerCase().trim();
+    const userName = name || 'Yudhveer Customer';
+
+    let user = await User.findOne({ email: userEmail });
+
+    if (!user) {
+      user = await User.create({
+        name: userName,
+        email: userEmail,
+        googleId: uid,
+        authProvider: 'google',
+      });
+    } else {
+      if (!user.googleId) user.googleId = uid;
+      if (!user.name) user.name = userName;
+      await user.save();
+    }
+
+    return res.status(200).json({
+      message: 'Login successful',
+      data: {
+        token: signToken(user._id),
+        user: sanitizeUser(user),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Unable to complete Google login', error: error.message });
   }
 });
 
