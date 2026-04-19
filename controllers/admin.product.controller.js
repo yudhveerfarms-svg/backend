@@ -51,13 +51,28 @@ const create = asyncHandler(async (req, res) => {
 const update = asyncHandler(async (req, res) => {
   const isMultipart = req.is('multipart/form-data');
   const raw = isMultipart ? req.body : req.body;
-  const payload = {
-    ...raw,
-    price: raw.price,
-    discount: raw.discount,
-    images: raw.images != null ? (isMultipart ? parseJsonField(raw.images, undefined) : raw.images) : undefined,
-    variants: raw.variants != null ? (isMultipart ? parseJsonField(raw.variants, undefined) : raw.variants) : undefined,
-  };
+  
+  // Handle status-only updates (preserve existing data)
+  if (raw.status && Object.keys(raw).length === 1) {
+    // For status-only updates, create a minimal payload with only status
+    const statusPayload = { status: raw.status };
+    const parsed = productUpdateSchema.parse(statusPayload);
+    const data = await productAdminService.updateAdminProduct(req.params.productId, parsed, uploadedPaths(req));
+    return sendSuccess(res, data, { message: 'Product updated' });
+  }
+  
+  // Full update with all provided fields
+  const payload = { ...raw };
+  
+  if (raw.price != null) payload.price = raw.price;
+  if (raw.discount != null) payload.discount = raw.discount;
+  if (raw.images != null) {
+    payload.images = isMultipart ? parseJsonField(raw.images, undefined) : raw.images;
+  }
+  if (raw.variants != null) {
+    payload.variants = isMultipart ? parseJsonField(raw.variants, undefined) : raw.variants;
+  }
+  
   const parsed = productUpdateSchema.parse(payload);
   const data = await productAdminService.updateAdminProduct(req.params.productId, parsed, uploadedPaths(req));
   return sendSuccess(res, data, { message: 'Product updated' });

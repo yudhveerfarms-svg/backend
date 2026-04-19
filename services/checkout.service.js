@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const { getRazorpay } = require('./razorpay');
 const { AppError } = require('../utils/AppError');
+const { calculateGST } = require('./gst.service');
 
 function createOrderNumber() {
   return `ORD-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
@@ -96,17 +97,20 @@ async function createCheckoutOrder({ items, customer, user }) {
     });
   }
 
+  // Calculate GST based on delivery state
+  const gstCalculation = calculateGST(subtotal, resolvedCustomer.state);
+  
   const receipt = createOrderNumber().slice(0, 40);
   const razorpayOrder = await getRazorpay().orders.create({
-    amount: toPaise(subtotal),
+    amount: toPaise(gstCalculation.totalWithGST),
     currency: 'INR',
     receipt,
     payment_capture: 1,
   });
 
-  const taxAmount = 0;
+  const taxAmount = 0; // Keeping for backward compatibility
   const shippingAmount = 0;
-  const grandTotal = subtotal + taxAmount + shippingAmount;
+  const grandTotal = gstCalculation.totalWithGST;
 
   const order = await Order.create({
     orderNumber: createOrderNumber(),
@@ -117,6 +121,13 @@ async function createCheckoutOrder({ items, customer, user }) {
     subtotal,
     taxAmount,
     shippingAmount,
+    // GST Fields
+    cgst: gstCalculation.cgst,
+    sgst: gstCalculation.sgst,
+    igst: gstCalculation.igst,
+    totalGST: gstCalculation.totalGST,
+    gstRate: gstCalculation.gstRate,
+    isInterState: gstCalculation.isInterState,
     productId: normalizedItems[0].product,
     quantity: normalizedItems.reduce((sum, item) => sum + item.quantity, 0),
     totalPrice: grandTotal,
@@ -145,7 +156,7 @@ async function createCheckoutOrder({ items, customer, user }) {
   return {
     orderId: order._id,
     orderNumber: order.orderNumber,
-    amount: toPaise(order.subtotal),
+    amount: toPaise(order.totalPrice), // Use totalPrice which includes GST
     currency: order.currency,
     key: process.env.RAZORPAY_KEY_ID,
     razorpayOrderId: razorpayOrder.id,
@@ -267,7 +278,7 @@ async function retryCheckoutPayment(orderId) {
 
   const receipt = `${order.orderNumber}-R${order.paymentAttempts.length + 1}`.slice(0, 40);
   const razorpayOrder = await getRazorpay().orders.create({
-    amount: toPaise(order.subtotal),
+    amount: toPaise(order.totalPrice), // Use totalPrice which includes GST
     currency: order.currency,
     receipt,
     payment_capture: 1,
@@ -277,7 +288,7 @@ async function retryCheckoutPayment(orderId) {
   order.orderStatus = 'pending';
   order.paymentAttempts.push({
     razorpayOrderId: razorpayOrder.id,
-    amount: order.subtotal,
+    amount: order.totalPrice, // Use totalPrice which includes GST
     status: 'created',
     rawPayload: razorpayOrder,
   });
@@ -286,7 +297,7 @@ async function retryCheckoutPayment(orderId) {
   return {
     orderId: order._id,
     orderNumber: order.orderNumber,
-    amount: toPaise(order.subtotal),
+    amount: toPaise(order.totalPrice), // Use totalPrice which includes GST
     currency: order.currency,
     key: process.env.RAZORPAY_KEY_ID,
     razorpayOrderId: razorpayOrder.id,

@@ -95,12 +95,14 @@ async function updateAdminProduct(productId, updates, uploadedImagePaths = []) {
   if (updates.price != null) product.price = updates.price;
   if (updates.discount != null) product.discount = updates.discount;
 
-  if (updates.images != null || uploadedImagePaths.length) {
-    const nextImages = normalizeImages([...(updates.images || product.images || []), ...uploadedImagePaths]);
+  // Only update images if explicitly provided or new files uploaded
+  if (updates.images !== undefined || uploadedImagePaths.length) {
+    const nextImages = normalizeImages([...(updates.images !== undefined ? updates.images : product.images || []), ...uploadedImagePaths]);
     product.images = nextImages;
   }
 
-  if (updates.variants != null) {
+  // Only update variants if explicitly provided
+  if (updates.variants !== undefined) {
     product.variants = normalizeVariants(updates.variants);
   }
 

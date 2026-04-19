@@ -21,7 +21,10 @@ const productBaseSchema = z.object({
   variants: z.array(variantSchema).optional().default([]),
 });
 
-const productUpdateSchema = productBaseSchema.partial().refine((b) => Object.keys(b).length > 0, {
+const productUpdateSchema = productBaseSchema.partial().extend({
+  images: z.array(z.string().trim().min(1).max(2000)).optional(),
+  variants: z.array(variantSchema).optional(),
+}).refine((b) => Object.keys(b).length > 0, {
   message: 'No updates provided',
 });
 

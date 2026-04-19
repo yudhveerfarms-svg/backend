@@ -119,6 +119,36 @@ const orderSchema = mongoose.Schema(
       default: 0,
       min: 0,
     },
+    // GST Fields
+    cgst: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    sgst: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    igst: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalGST: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    gstRate: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    isInterState: {
+      type: Boolean,
+      default: false,
+    },
     paymentMethod: {
       type: String,
       default: 'Razorpay',
