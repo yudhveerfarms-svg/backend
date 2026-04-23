@@ -97,12 +97,13 @@ async function createCheckoutOrder({ items, customer, user }) {
     });
   }
 
-  // Calculate GST based on delivery state
+  // Calculate GST breakdown for inclusive pricing
   const gstCalculation = calculateGST(subtotal, resolvedCustomer.state);
-  
+
   const receipt = createOrderNumber().slice(0, 40);
+  // For inclusive pricing, the subtotal already includes GST
   const razorpayOrder = await getRazorpay().orders.create({
-    amount: toPaise(gstCalculation.totalWithGST),
+    amount: toPaise(subtotal), // Subtotal already includes GST
     currency: 'INR',
     receipt,
     payment_capture: 1,
@@ -110,7 +111,7 @@ async function createCheckoutOrder({ items, customer, user }) {
 
   const taxAmount = 0; // Keeping for backward compatibility
   const shippingAmount = 0;
-  const grandTotal = gstCalculation.totalWithGST;
+  const grandTotal = subtotal; // Total is the same as subtotal (GST inclusive)
 
   const order = await Order.create({
     orderNumber: createOrderNumber(),

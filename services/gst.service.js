@@ -9,10 +9,10 @@
  */
 
 /**
- * Calculate GST based on delivery state
- * @param {number} amount - The base amount before GST
- * @param {string} state - Delivery state name
- * @returns {Object} GST breakdown
+ * Calculate GST breakdown for inclusive pricing
+ * @param {number} amount - The amount including GST
+ * @param {string} state - The delivery state
+ * @returns {object} GST breakdown and totals
  */
 function calculateGST(amount, state) {
   if (!amount || amount <= 0) {
@@ -21,47 +21,47 @@ function calculateGST(amount, state) {
       sgst: 0,
       igst: 0,
       totalGST: 0,
+      taxableAmount: 0,
       totalWithGST: 0,
       gstRate: 0
     };
   }
 
-  // Normalize state name for comparison
   const normalizedState = state ? state.toLowerCase().trim() : '';
-  
-  // Check if delivery is within Punjab
-  const isPunjab = normalizedState === 'punjab' || 
+  const isPunjab = normalizedState === 'punjab' ||
                    normalizedState === 'pb' ||
                    normalizedState.includes('punjab');
-  
+
   const gstRate = 0.05; // 5% GST rate for dairy products
   
+  // For inclusive pricing: amount already includes GST
+  // taxableAmount = amount / (1 + gstRate)
+  const taxableAmount = amount / (1 + gstRate);
+  const totalGST = amount - taxableAmount;
+
   if (isPunjab) {
-    // Intra-state: Apply CGST + SGST
-    const cgst = amount * 0.025; // 2.5% CGST
-    const sgst = amount * 0.025; // 2.5% SGST
-    const totalGST = cgst + sgst;
-    
+    const cgst = totalGST / 2; // Split GST equally between CGST and SGST
+    const sgst = totalGST / 2;
+
     return {
-      cgst: Math.round(cgst * 100) / 100, // Round to 2 decimal places
+      cgst: Math.round(cgst * 100) / 100,
       sgst: Math.round(sgst * 100) / 100,
       igst: 0,
       totalGST: Math.round(totalGST * 100) / 100,
-      totalWithGST: amount + Math.round(totalGST * 100) / 100,
+      taxableAmount: Math.round(taxableAmount * 100) / 100,
+      totalWithGST: amount, // Amount already includes GST
       gstRate: 5,
       isInterState: false,
       state: 'Punjab'
     };
   } else {
-    // Inter-state: Apply IGST
-    const igst = amount * gstRate;
-    
     return {
       cgst: 0,
       sgst: 0,
-      igst: Math.round(igst * 100) / 100,
-      totalGST: Math.round(igst * 100) / 100,
-      totalWithGST: amount + Math.round(igst * 100) / 100,
+      igst: Math.round(totalGST * 100) / 100,
+      totalGST: Math.round(totalGST * 100) / 100,
+      taxableAmount: Math.round(taxableAmount * 100) / 100,
+      totalWithGST: amount, // Amount already includes GST
       gstRate: 5,
       isInterState: true,
       state: state || 'Other State'
