@@ -26,6 +26,14 @@ const orderItemSchema = mongoose.Schema(
       required: true,
       min: 0,
     },
+    selectedSize: {
+      type: String,
+      default: '',
+    },
+    productImage: {
+      type: String,
+      default: '',
+    },
   },
   { _id: false }
 );

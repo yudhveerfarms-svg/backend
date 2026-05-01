@@ -21,4 +21,8 @@ const updateProfileSchema = z
   })
   .refine((body) => Object.keys(body).length > 0, { message: 'At least one field is required' });
 
-module.exports = { signupSchema, loginSchema, updateProfileSchema };
+const firebaseLoginSchema = z.object({
+  idToken: z.string().min(1, 'Firebase ID token is required'),
+});
+
+module.exports = { signupSchema, loginSchema, updateProfileSchema, firebaseLoginSchema };
