@@ -6,10 +6,26 @@ function normalizeCartItem(item) {
   const p = item.product;
   const productId =
     p && typeof p === 'object' && p._id != null ? String(p._id) : p != null ? String(p) : '';
+  
+  // Calculate variant-specific price
+  let itemPrice = undefined;
+  if (typeof p === 'object' && p) {
+    if (p.variants && p.variants.length > 0 && item.selectedSize) {
+      const variant = p.variants.find(v => v.size === item.selectedSize);
+      if (variant && variant.price > 0) {
+        itemPrice = Number(variant.price);
+      } else {
+        itemPrice = Number(p.price) || 0;
+      }
+    } else {
+      itemPrice = Number(p.price) || 0;
+    }
+  }
+  
   return {
     productId,
     name: typeof p === 'object' && p ? p.name : undefined,
-    price: typeof p === 'object' && p ? p.price : undefined,
+    price: itemPrice,
     image: typeof p === 'object' && p && p.image ? String(p.image) : '',
     quantity: item.quantity,
     selectedSize: item.selectedSize || '',
