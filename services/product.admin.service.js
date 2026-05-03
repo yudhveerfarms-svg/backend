@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const { AppError } = require('../utils/AppError');
+const { slugify, generateUniqueSlug } = require('../utils/slugify');
 
 function normalizeImages(images) {
   const list = Array.isArray(images) ? images : [];
@@ -59,11 +60,20 @@ async function getAdminProduct(productId) {
 async function createAdminProduct(payload, uploadedImagePaths = []) {
   const images = normalizeImages([...(payload.images || []), ...uploadedImagePaths]);
   const variants = normalizeVariants(payload.variants);
+  
+  // Generate slug from product name
+  const baseSlug = slugify(payload.name);
+  const slug = await generateUniqueSlug(baseSlug, async (slug) => {
+    const existing = await Product.findOne({ slug }).lean();
+    return !!existing;
+  });
+  
   const product = await Product.create({
     name: payload.name,
     description: payload.description,
     category: payload.category,
     sku: payload.sku,
+    slug: slug,
     status: payload.status || 'draft',
     price: payload.price ?? 0,
     discount: payload.discount ?? 0,
@@ -87,7 +97,16 @@ async function updateAdminProduct(productId, updates, uploadedImagePaths = []) {
   const product = await Product.findById(productId);
   if (!product) throw new AppError('Product not found', 404);
 
-  if (updates.name != null) product.name = updates.name;
+  if (updates.name != null) {
+    product.name = updates.name;
+    // Regenerate slug if name changed
+    const baseSlug = slugify(updates.name);
+    const slug = await generateUniqueSlug(baseSlug, async (slug) => {
+      const existing = await Product.findOne({ slug, _id: { $ne: product._id } }).lean();
+      return !!existing;
+    });
+    product.slug = slug;
+  }
   if (updates.description != null) product.description = updates.description;
   if (updates.category != null) product.category = updates.category;
   if (updates.sku != null) product.sku = updates.sku;
