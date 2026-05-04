@@ -16,12 +16,13 @@ async function generateInvoiceData(orderId) {
   }
 
   // Company information (you can update this with your actual company details)
-  const companyInfo = {
+  
+   const companyInfo = {
     name: 'Yudhveer Farms',
-    address: 'Farm Address, Punjab, India',
-    phone: '+91XXXXXXXXXX',
-    email: 'info@yudhveerfarms.com',
-    gstin: 'GSTINXXXXXXXXXX', // Add your actual GSTIN
+    address: 'Fatuhiwala, Muktsar, Punjab, India 152113',
+    phone: '+918559097003',
+    email: 'yudhveerfarms@gmail.com',
+    gstin: '03HQUPS7601J1Z7', // Add your actual GSTIN
     state: 'Punjab',
     stateCode: '03' // Punjab state code
   };
