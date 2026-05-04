@@ -1,6 +1,7 @@
 const { asyncHandler } = require('../utils/asyncHandler');
 const { sendSuccess, sendCreated } = require('../utils/response');
 const authService = require('../services/auth.service');
+const firebaseService = require('../services/firebase.service');
 
 const signup = asyncHandler(async (req, res) => {
   const data = await authService.signup(req.validated);
@@ -26,4 +27,9 @@ const updateMe = asyncHandler(async (req, res) => {
   return sendSuccess(res, result, { message: 'Profile updated' });
 });
 
-module.exports = { signup, login, adminLogin, me, updateMe };
+const firebaseLogin = asyncHandler(async (req, res) => {
+  const data = await firebaseService.firebaseLogin(req.validated.idToken);
+  return sendSuccess(res, data, { message: 'Google login successful' });
+});
+
+module.exports = { signup, login, adminLogin, me, updateMe, firebaseLogin };

@@ -4,6 +4,7 @@ const Product = require('../models/Product');
 const { getRazorpay } = require('./razorpay');
 const { AppError } = require('../utils/AppError');
 const { calculateGST } = require('./gst.service');
+const { sendOrderConfirmationEmail } = require('./email.service');
 
 function createOrderNumber() {
   return `ORD-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
@@ -66,19 +67,25 @@ async function createCheckoutOrder({ items, customer, user }) {
     const selectedSize = String(item.selectedSize || '').trim();
     let unitPrice = typeof product.price === 'number' ? product.price : 0;
 
-    if (selectedSize && Array.isArray(product.variants) && product.variants.length) {
-      const variant = product.variants.find((v) => String(v.size).trim() === selectedSize);
-      if (!variant) {
-        throw new AppError(`Invalid variant size for ${product.name}`, 400);
+    // Use price from cart item if provided (for checkout), otherwise calculate from variants
+    if (typeof item.price === 'number' && item.price > 0) {
+      unitPrice = item.price;
+    } else {
+      // Calculate price from variants (for direct product checkout)
+      if (selectedSize && Array.isArray(product.variants) && product.variants.length) {
+        const variant = product.variants.find((v) => String(v.size).trim() === selectedSize);
+        if (!variant) {
+          throw new AppError(`Invalid variant size for ${product.name}`, 400);
+        }
+        if (typeof variant.stock === 'number' && variant.stock < quantity) {
+          throw new AppError(`Insufficient stock for ${product.name} (${selectedSize})`, 400);
+        }
+        unitPrice = Number(variant.price) || 0;
+      } else if (Array.isArray(product.variants) && product.variants.length) {
+        // Default to cheapest variant when no size provided
+        const cheapest = [...product.variants].sort((a, b) => (a.price || 0) - (b.price || 0))[0];
+        unitPrice = Number(cheapest?.price) || unitPrice;
       }
-      if (typeof variant.stock === 'number' && variant.stock < quantity) {
-        throw new AppError(`Insufficient stock for ${product.name} (${selectedSize})`, 400);
-      }
-      unitPrice = Number(variant.price) || 0;
-    } else if (Array.isArray(product.variants) && product.variants.length) {
-      // Default to cheapest variant when no size provided
-      const cheapest = [...product.variants].sort((a, b) => (a.price || 0) - (b.price || 0))[0];
-      unitPrice = Number(cheapest?.price) || unitPrice;
     }
 
     if (typeof unitPrice !== 'number' || unitPrice <= 0) {
@@ -94,6 +101,8 @@ async function createCheckoutOrder({ items, customer, user }) {
       price: unitPrice,
       quantity,
       lineTotal,
+      selectedSize: selectedSize,
+      productImage: product.image || '',
     });
   }
 
@@ -228,6 +237,27 @@ async function verifyCheckoutPayment({ orderId, razorpayOrderId, razorpayPayment
   });
 
   await order.save();
+
+  // Send order confirmation email with invoice PDF
+  try {
+    // Generate invoice PDF for email attachment
+    const { generateInvoiceData } = require('./invoice.service');
+    const { generateInvoicePDF } = require('./pdf.service');
+    const invoiceData = await generateInvoiceData(order._id);
+    const invoicePdfBuffer = await generateInvoicePDF(invoiceData);
+    
+    // Send email to customer
+    const customerEmail = order.customer?.email;
+    if (customerEmail) {
+      await sendOrderConfirmationEmail(order, customerEmail, invoicePdfBuffer);
+      console.log(`Order confirmation email sent to ${customerEmail} for order ${order.orderNumber}`);
+    } else {
+      console.log(`No customer email found for order ${order.orderNumber}`);
+    }
+  } catch (emailError) {
+    // Log email error but don't fail the payment verification
+    console.error('Failed to send order confirmation email:', emailError);
+  }
 
   return {
     orderId: order._id,

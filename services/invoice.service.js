@@ -38,9 +38,16 @@ async function generateInvoiceData(orderId) {
     gstin: order.customer.gstin || null // Optional customer GSTIN
   };
 
-  // Invoice details
+  // Invoice details - Generate invoice number if not exists
+  let invoiceNumber = order.invoiceNumber;
+  if (!invoiceNumber) {
+    invoiceNumber = `INV-${order.orderNumber}-${Date.now()}`;
+    // Update order with invoice number
+    await Order.findByIdAndUpdate(order._id, { invoiceNumber });
+  }
+  
   const invoiceDetails = {
-    invoiceNumber: order.invoiceNumber || `INV-${order.orderNumber}`,
+    invoiceNumber: invoiceNumber,
     orderNumber: order.orderNumber,
     invoiceDate: new Date().toLocaleDateString('en-IN'),
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN'), // 30 days
@@ -61,9 +68,22 @@ async function generateInvoiceData(orderId) {
     const itemSGST = order.sgst > 0 ? (itemSubtotal / order.subtotal) * order.sgst : 0;
     const itemIGST = order.igst > 0 ? (itemSubtotal / order.subtotal) * order.igst : 0;
 
+    // Extract variant information from the item
+    let variant = '';
+    if (item.selectedSize) {
+      variant = item.selectedSize;
+    } else if (item.product && item.product.variants && Array.isArray(item.product.variants) && item.product.variants.length > 0) {
+      // If product has variants, show available sizes
+      variant = item.product.variants.map(v => v.size).join(', ');
+    } else {
+      // For products without variants, don't show N/A
+      variant = '';
+    }
+
     return {
       productId: item.product._id,
       name: item.name,
+      variant: variant, // Add variant information
       hsnCode: '0401', // Dairy products HSN code
       quantity: item.quantity,
       unit: 'PCS',
@@ -203,7 +223,7 @@ function generateInvoiceHTML(invoiceData) {
             <tbody>
                 ${items.map(item => `
                 <tr>
-                    <td>${item.name}</td>
+                    <td>${item.name}${item.variant ? ` (${item.variant})` : ''}</td>
                     <td>${item.hsnCode}</td>
                     <td>${item.quantity}</td>
                     <td class="text-right">₹${item.unitPrice.toFixed(2)}</td>

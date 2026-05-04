@@ -27,6 +27,8 @@ const productSchema = mongoose.Schema(
 
     sku: { type: String, required: true, unique: true, trim: true, maxlength: 80, index: true },
 
+    slug: { type: String, unique: true, trim: true, maxlength: 200, index: true },
+
     status: { type: String, enum: ['public', 'draft'], default: 'draft', index: true },
 
     images: { type: [String], default: [] },

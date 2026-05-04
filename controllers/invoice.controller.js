@@ -1,4 +1,5 @@
 const { generateInvoiceData, generateInvoiceHTML } = require('../services/invoice.service');
+const { generateInvoicePDF } = require('../services/pdf.service');
 const Order = require('../models/Order');
 const { AppError } = require('../utils/AppError');
 const { authRequired } = require('../middleware/auth');
@@ -36,7 +37,7 @@ async function getInvoice(req, res) {
 }
 
 /**
- * Generate and download invoice as PDF (future enhancement)
+ * Generate and download invoice as PDF
  */
 async function downloadInvoice(req, res) {
   try {
@@ -46,20 +47,24 @@ async function downloadInvoice(req, res) {
       throw new AppError('Order ID is required', 400);
     }
 
-    // For now, return HTML. In future, you can integrate a PDF library like puppeteer
+    // Generate invoice data
     const invoiceData = await generateInvoiceData(orderId);
-    const invoiceHTML = generateInvoiceHTML(invoiceData);
     
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoiceData.invoiceDetails.invoiceNumber}.html"`);
+    // Generate PDF buffer
+    const pdfBuffer = await generateInvoicePDF(invoiceData);
     
-    res.send(invoiceHTML);
+    // Set headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoiceData.invoiceDetails.invoiceNumber}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    
+    res.send(pdfBuffer);
   } catch (error) {
-    console.error('Error downloading invoice:', error);
+    console.error('Error downloading invoice PDF:', error);
     if (error.message === 'Order not found') {
       res.status(404).json({ error: 'Order not found' });
     } else {
-      res.status(500).json({ error: 'Failed to generate invoice' });
+      res.status(500).json({ error: 'Failed to generate PDF invoice' });
     }
   }
 }

@@ -58,6 +58,15 @@ const userSchema = mongoose.Schema(
       type: [cartItemSchema],
       default: [],
     },
+    googleId: {
+      type: String,
+      sparse: true,
+      unique: true,
+    },
+    avatar: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true }
 );

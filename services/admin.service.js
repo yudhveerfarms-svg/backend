@@ -215,7 +215,7 @@ async function listOrders(query) {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum)
-      .populate('items.product', 'name image price')
+      .populate('items.product', 'name image price variants')
       .lean(),
     Order.countDocuments(filter),
   ]);
@@ -233,14 +233,14 @@ async function getRecentOrders(limit = 8) {
   const orders = await Order.find()
     .sort({ createdAt: -1 })
     .limit(limit)
-    .populate('items.product', 'name image')
+    .populate('items.product', 'name image variants')
     .lean();
   return orders.map((o) => serializeOrder(o));
 }
 
 async function getOrderById(orderId) {
   const order = await Order.findById(orderId)
-    .populate('items.product', 'name image price description type weight')
+    .populate('items.product', 'name image price description type weight variants')
     .populate('user', 'name email phone address')
     .lean();
   if (!order) throw new AppError('Order not found', 404);
@@ -295,7 +295,7 @@ async function updateOrder(orderId, body) {
 
   await order.save();
   const fresh = await Order.findById(order._id)
-    .populate('items.product', 'name image price description type weight')
+    .populate('items.product', 'name image price description type weight variants')
     .populate('user', 'name email phone address')
     .lean();
 
@@ -304,12 +304,12 @@ async function updateOrder(orderId, body) {
 
 async function issueInvoiceForOrder(orderId) {
   const order = await Order.findById(orderId)
-    .populate('items.product', 'name image price')
+    .populate('items.product', 'name image price variants')
     .populate('user', 'name email phone address');
   if (!order) throw new AppError('Order not found', 404);
   await ensureInvoiceNumber(order);
   const fresh = await Order.findById(order._id)
-    .populate('items.product', 'name image price')
+    .populate('items.product', 'name image price variants')
     .populate('user', 'name email phone address')
     .lean();
   return serializeOrder(fresh);
