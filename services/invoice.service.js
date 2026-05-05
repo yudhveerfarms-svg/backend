@@ -16,8 +16,8 @@ async function generateInvoiceData(orderId) {
   }
 
   // Company information (you can update this with your actual company details)
-  
-   const companyInfo = {
+
+  const companyInfo = {
     name: 'Yudhveer Farms',
     address: 'Fatuhiwala, Muktsar, Punjab, India 152113',
     phone: '+918559097003',
@@ -46,7 +46,7 @@ async function generateInvoiceData(orderId) {
     // Update order with invoice number
     await Order.findByIdAndUpdate(order._id, { invoiceNumber });
   }
-  
+
   const invoiceDetails = {
     invoiceNumber: invoiceNumber,
     orderNumber: order.orderNumber,
@@ -62,7 +62,7 @@ async function generateInvoiceData(orderId) {
   const items = order.items.map(item => {
     const itemSubtotal = item.price * item.quantity;
     const gstRate = order.gstRate || 5;
-    
+
     // Calculate GST per item proportionally
     const itemGST = (itemSubtotal / order.subtotal) * order.totalGST;
     const itemCGST = order.cgst > 0 ? (itemSubtotal / order.subtotal) * order.cgst : 0;
@@ -84,8 +84,8 @@ async function generateInvoiceData(orderId) {
     return {
       productId: item.product._id,
       name: item.name,
-      variant: variant, // Add variant information
-      hsnCode: '0401', // Dairy products HSN code
+      variant: variant,
+      hsnCode: '0401',
       quantity: item.quantity,
       unit: 'PCS',
       unitPrice: item.price,
@@ -95,7 +95,7 @@ async function generateInvoiceData(orderId) {
       sgst: Math.round(itemSGST * 100) / 100,
       igst: Math.round(itemIGST * 100) / 100,
       totalGST: Math.round(itemGST * 100) / 100,
-      total: itemSubtotal + Math.round(itemGST * 100) / 100
+      total: itemSubtotal // ✅ GST excluded
     };
   });
 
@@ -148,13 +148,16 @@ function generateInvoiceHTML(invoiceData) {
     <title>Tax Invoice - ${invoiceDetails.invoiceNumber}</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .invoice { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border: 1px solid #ddd; }
+        .invoice { max-width: 800px; width: 100%; margin: 0 auto; background: white; padding: 30px; border: 1px solid #ddd; box-sizing: border-box; }
         .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
-        .company-info { text-align: left; margin-bottom: 20px; }
-        .billing-info { text-align: right; margin-bottom: 20px; }
+        .company-row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px; margin-bottom: 20px; }
+        .company-info, .billing-info { flex: 1 1 280px; min-width: 0; }
+        .company-info { text-align: left; }
+        .billing-info { text-align: left; }
         .invoice-details { margin: 20px 0; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; }
-        .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        .items-table th, .items-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        .table-wrapper { width: 100%; overflow-x: auto; margin: 20px 0; }
+        .items-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+        .items-table th, .items-table td { border: 1px solid #ddd; padding: 12px; text-align: left; font-size: 14px; }
         .items-table th { background: #f5f5f5; font-weight: bold; }
         .items-table .text-right { text-align: right; }
         .gst-summary { margin: 20px 0; padding: 15px; background: #f0f8ff; border: 1px solid #ddd; }
@@ -163,6 +166,18 @@ function generateInvoiceHTML(invoiceData) {
         .totals .grand-total { font-size: 18px; font-weight: bold; border-top: 2px solid #333; padding-top: 10px; }
         .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
         .gst-info { background: #fff3cd; padding: 10px; border: 1px solid #ffeaa7; margin: 10px 0; font-size: 12px; }
+        @media (max-width: 720px) {
+            body { padding: 10px; }
+            .invoice { padding: 20px; }
+            .company-row { flex-direction: column; }
+            .company-info, .billing-info { width: 100%; }
+            .invoice-details { font-size: 14px; }
+            .items-table th, .items-table td { padding: 10px; font-size: 12px; }
+            .gst-summary, .gst-info, .totals, .footer { font-size: 13px; }
+            .totals { text-align: left; }
+            .totals .grand-total { text-align: left; }
+            .header h1 { font-size: 22px; }
+        }
     </style>
 </head>
 <body>
@@ -172,16 +187,16 @@ function generateInvoiceHTML(invoiceData) {
             <p>${companyInfo.name} | GSTIN: ${companyInfo.gstin}</p>
         </div>
 
-        <div style="display: flex; justify-content: space-between;">
-            <div class="company-info">
-                <strong>Billed By:</strong><br>
-                ${companyInfo.name}<br>
-                ${companyInfo.address}<br>
-                Phone: ${companyInfo.phone}<br>
-                Email: ${companyInfo.email}<br>
-                GSTIN: ${companyInfo.gstin}<br>
-                State: ${companyInfo.state} (${companyInfo.stateCode})
-            </div>
+        <div class="company-row">
+           <div class="company-info">
+          <strong>Billed By:</strong><br>
+          <strong>${companyInfo.name}</strong><br>
+          ${companyInfo.address}<br>
+          Phone: ${companyInfo.phone}<br>
+          Email: ${companyInfo.email}<br>
+          GSTIN: ${companyInfo.gstin}<br>
+          State: ${companyInfo.state} (${companyInfo.stateCode})
+        </div>
 
             <div class="billing-info">
                 <strong>Billed To:</strong><br>
@@ -206,6 +221,7 @@ function generateInvoiceHTML(invoiceData) {
             Payment Status: ${invoiceDetails.paymentStatus}
         </div>
 
+        <div class="table-wrapper">
         <table class="items-table">
             <thead>
                 <tr>
@@ -238,14 +254,15 @@ function generateInvoiceHTML(invoiceData) {
                 `).join('')}
             </tbody>
         </table>
+        </div>
 
         <div class="gst-summary">
             <strong>GST Summary:</strong><br>
-            ${gstSummary.isInterState ? 
-                `IGST (${gstSummary.gstRate}%): ₹${gstSummary.igst.toFixed(2)}` :
-                `CGST (${gstSummary.gstRate/2}%): ₹${gstSummary.cgst.toFixed(2)}<br>
-                 SGST (${gstSummary.gstRate/2}%): ₹${gstSummary.sgst.toFixed(2)}`
-            }<br>
+            ${gstSummary.isInterState ?
+      `IGST (${gstSummary.gstRate}%): ₹${gstSummary.igst.toFixed(2)}` :
+      `CGST (${gstSummary.gstRate / 2}%): ₹${gstSummary.cgst.toFixed(2)}<br>
+                 SGST (${gstSummary.gstRate / 2}%): ₹${gstSummary.sgst.toFixed(2)}`
+    }<br>
             Total GST: ₹${gstSummary.totalGST.toFixed(2)}<br>
             Taxable Amount: ₹${gstSummary.taxableAmount.toFixed(2)}<br>
             Total Amount: ₹${gstSummary.totalAmount.toFixed(2)}
