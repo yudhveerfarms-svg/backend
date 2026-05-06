@@ -9,6 +9,7 @@ const {
 } = require('../validators/admin.schemas');
 const adminController = require('../controllers/admin.controller');
 const adminProductController = require('../controllers/admin.product.controller');
+const adminCustomerController = require('../controllers/admin.customer.controller');
 
 const router = express.Router();
 
@@ -41,5 +42,12 @@ router.get('/products/:productId', adminProductController.getOne);
 router.post('/products', uploadProductImages, adminProductController.create);
 router.patch('/products/:productId', uploadProductImages, adminProductController.update);
 router.delete('/products/:productId', adminProductController.remove);
+
+// Customer management
+router.get('/customers', adminCustomerController.list);
+router.get('/customers/:customerId', adminCustomerController.getOne);
+router.post('/customers', adminCustomerController.create);
+router.patch('/customers/:customerId', adminCustomerController.update);
+router.delete('/customers/:customerId', adminCustomerController.remove);
 
 module.exports = router;

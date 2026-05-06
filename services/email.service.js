@@ -74,14 +74,14 @@ async function sendContactEmail({ name, email, message }) {
 
 async function sendOrderConfirmationEmail(order, customerEmail, invoicePdfBuffer = null) {
   const transporter = createTransporter();
-  
+
   if (!customerEmail) {
     throw new AppError('Customer email is required for order confirmation', 400);
   }
 
   const items = order.items || [];
   const customer = order.customer || {};
-  
+
   // Generate invoice PDF if not provided
   let pdfAttachment = invoicePdfBuffer;
   if (!pdfAttachment) {
@@ -198,23 +198,31 @@ async function sendOrderConfirmationEmail(order, customerEmail, invoicePdfBuffer
                 </div>
             </div>
 
-            <div style="text-align: center; margin-bottom: 30px;">
-                <p style="color: #6b7280; margin-bottom: 15px;">Need help? Contact our customer support:</p>
-                <div style="display: flex; justify-content: center; gap: 15px;">
-                    <a href="tel:+919876543210" style="background: #f97316; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                        📞 Call Us
-                    </a>
-                    <a href="mailto:info@yudhveerfarms.com" style="background: #1f2937; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                        ✉️ Email Us
-                    </a>
-                </div>
-            </div>
-        </div>
+         <div style="text-align: center; margin-bottom: 30px;">
+    <p style="color: #6b7280; margin-bottom: 15px;">
+        Need help? Contact our customer support:
+    </p>
 
+        <div style="display: inline-block;">
+            <a href="tel:+918559097003"
+              style="background: #f97316; color: white; padding: 10px 20px;
+              text-decoration: none; border-radius: 8px; font-weight: 600;
+              margin-right: 15px; display: inline-block;">
+                📞 Call Us
+            </a>
+
+            <a href="mailto:yudhveerfarms@gmail.com"
+              style="background: #1f2937; color: white; padding: 10px 20px;
+              text-decoration: none; border-radius: 8px; font-weight: 600;
+              display: inline-block;">
+                ✉️ Email Us
+            </a>
+        </div>
+    </div>
         <div class="footer">
             <p><strong>Yudhveer Farms</strong></p>
-            <p>Farm-fresh dairy, stone-ground staples, and cold-pressed oils</p>
-            <p>📍 Punjab, India | 📞 +91 98765 43210 | ✉️ info@yudhveerfarms.com</p>
+            <p>Farm-fresh dairy products, stone-ground staples, and cold-pressed oils</p>
+            <p>📍 Punjab, India | 📞 +91 85590 97003 | ✉️ yudhveerfarms@gmail.com</p>
             <div class="social">
                 <a href="#">📘</a>
                 <a href="#">📷</a>
@@ -238,7 +246,7 @@ async function sendOrderConfirmationEmail(order, customerEmail, invoicePdfBuffer
   await transporter.sendMail(mailOptions);
 }
 
-module.exports = { 
+module.exports = {
   sendContactEmail,
   sendOrderConfirmationEmail
 };
