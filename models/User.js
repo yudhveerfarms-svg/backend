@@ -37,7 +37,9 @@ const userSchema = mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: function() {
+        return !this.googleId; // Password required only for non-Google users
+      },
       minlength: 6,
     },
     phone: {
