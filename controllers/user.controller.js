@@ -5,10 +5,10 @@ const { AppError } = require('../utils/AppError');
 const updateProfile = async (req, res, next) => {
   try {
     const { name, phone, address, avatar } = req.body;
-    
+
     // Find user by ID
     const user = await User.findById(req.user.id);
-    
+
     if (!user) {
       return next(new AppError('User not found', 404));
     }
@@ -46,7 +46,7 @@ const updateProfile = async (req, res, next) => {
 const getProfile = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
-    
+
     if (!user) {
       return next(new AppError('User not found', 404));
     }
